@@ -1,6 +1,8 @@
 package com.github.kaktushose.jda.commands.entities;
 
 import com.github.kaktushose.jda.commands.exceptions.CommandException;
+import com.github.kaktushose.jda.commands.internal.JedisInstanceHolder;
+import com.github.kaktushose.jda.commands.internal.JedisReadWrite;
 import net.dv8tion.jda.api.entities.Guild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,10 @@ public class CommandSettings {
     private boolean botMentionPrefix;
     private String prefix;
     private boolean ignoreBots, ignoreLabelCase;
+    private boolean isRedisEnabled;
+    private String redisHost;
+    private int redisPort;
+    private int redisDB;
 
     /**
      * Constructs a new CommandSettings object with default values.
@@ -50,7 +56,7 @@ public class CommandSettings {
      * @param ignoreLabelCase  whether the command mapper should be case sensitive or not
      * @param botMentionPrefix whether to allow a bot mention to be a valid prefix or not
      */
-    public CommandSettings(@Nullable String prefix, boolean ignoreBots, boolean ignoreLabelCase, boolean botMentionPrefix) {
+    public CommandSettings(@Nullable String prefix, boolean ignoreBots, boolean ignoreLabelCase, boolean botMentionPrefix, boolean isRedisEnabled, String redisHost, int redisPort, int redisDB) {
         this.prefix = validatePrefix(prefix);
         this.ignoreBots = ignoreBots;
         this.ignoreLabelCase = ignoreLabelCase;
@@ -61,6 +67,10 @@ public class CommandSettings {
         permissionHolders = new ConcurrentHashMap<>();
         helpLabels = ConcurrentHashMap.newKeySet();
         helpLabels.add("help");
+        this.isRedisEnabled = isRedisEnabled;
+        this.redisHost = redisHost;
+        this.redisPort = redisPort;
+        this.redisDB = redisDB;
     }
 
     /**
@@ -91,8 +101,12 @@ public class CommandSettings {
      * @param prefix  the prefix to set
      * @return the current instance to use fluent interface
      */
+
     public CommandSettings addGuildPrefix(long guildId, @Nullable String prefix) {
         guildPrefixes.put(guildId, validatePrefix(prefix));
+        if (JDACommands.getInstance().getSettings().isRedisEnabled) {
+            JedisReadWrite.insertString(JDACommands.getInstance().getSettings().redisDB, String.valueOf(guildId), validatePrefix(prefix));
+        }
         return this;
     }
 
@@ -116,6 +130,9 @@ public class CommandSettings {
      */
     public CommandSettings removeGuildPrefix(long guildId) {
         guildPrefixes.remove(guildId);
+        if (JDACommands.getInstance().getSettings().isRedisEnabled) {
+            JedisReadWrite.delString(JDACommands.getInstance().getSettings().redisDB, String.valueOf(guildId));
+        }
         return this;
     }
 
@@ -137,8 +154,32 @@ public class CommandSettings {
      */
     public String getGuildPrefix(long guildId) {
         String prefix = guildPrefixes.get(guildId);
-        return prefix == null ? this.prefix : prefix;
+        return prefix == null ? fetchGuildPrefixRedis(guildId) : prefix;
     }
+
+
+    /**
+     * Check for the prefix in the database (redis)
+     * if not present, return default prefix
+     * if the prefix is not present in cache, it will be put in there
+     *
+     * @param guildId the id of the guild to get the prefix for
+     * @return if present the custom guild prefix, else the default prefix
+     */
+    public String fetchGuildPrefixRedis(long guildId) {
+        if (JDACommands.getInstance().getSettings().isRedisEnabled) {
+            String prefix = JedisReadWrite.getString(JDACommands.getInstance().getSettings().redisDB, String.valueOf(guildId));
+            if (prefix == null) {
+                return this.prefix;
+            } else {
+                guildPrefixes.put(guildId, prefix);
+                return prefix;
+            }
+        }else{
+            return this.prefix;
+        }
+    }
+
 
     /**
      * Get the prefix for the specified guild.
@@ -273,6 +314,34 @@ public class CommandSettings {
             return "!";
         }
         return prefix;
+    }
+
+    /**
+     * Get if redis is supposed to be used or not
+     * used in: {@link CommandSettings}
+     *
+     * @return {@code boolean} if redis should be used or not
+     */
+    public boolean getRedisEnabled(){
+        return isRedisEnabled;
+    }
+
+    /**
+     * Get the redis host ip, to use in the {@link JedisInstanceHolder}
+     *
+     * @return the redisHost ip to use
+     */
+    public String getRedisHost(){
+        return redisHost;
+    }
+
+    /**
+     * Get the redis host port, to use in the {@link JedisInstanceHolder}
+     *
+     * @return the redisHost ip to use
+     */
+    public int getRedisPort(){
+        return redisPort;
     }
 
 }

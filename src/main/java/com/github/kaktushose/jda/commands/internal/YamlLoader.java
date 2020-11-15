@@ -22,7 +22,6 @@ import java.net.URL;
  * @since 1.0.0
  */
 public final class YamlLoader {
-
     /**
      * Loads a yaml file and creates a {@link CommandSettings} object from it.
      *
@@ -54,12 +53,20 @@ public final class YamlLoader {
      */
     public static CommandSettings load(File file) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        return mapper.readValue(file, CommandSettings.class);
+        CommandSettings cmdsettings = mapper.readValue(file, CommandSettings.class);
+        System.out.println("cmdsettings.getRedisHost() = " + cmdsettings.getRedisHost());
+        System.out.println("cmdsettings.getRedisPort() = " + cmdsettings.getRedisPort());
+        System.out.println("cmdsettings.getRedisEnabled() = " + cmdsettings.getRedisEnabled());
+        return cmdsettings;
     }
 
     public static CommandSettings loadContent(String content) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        return mapper.readValue(content, CommandSettings.class);
+        CommandSettings cmdsettings = mapper.readValue(content, CommandSettings.class);
+        System.out.println("cmdsettings.getRedisHost() = " + cmdsettings.getRedisHost());
+        System.out.println("cmdsettings.getRedisPort() = " + cmdsettings.getRedisPort());
+        System.out.println("cmdsettings.getRedisEnabled() = " + cmdsettings.getRedisEnabled());
+        return cmdsettings;
     }
 
 }
