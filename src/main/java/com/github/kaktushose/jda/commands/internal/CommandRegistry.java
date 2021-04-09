@@ -146,6 +146,7 @@ final class CommandRegistry {
                 parameters,
                 permissions,
                 method,
+                method.getName(),
                 instance);
         commands.add(commandCallable);
         log.debug("Registered command {}", commandCallable);

@@ -1,6 +1,7 @@
 package com.github.kaktushose.jda.commands.entities;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
@@ -13,7 +14,9 @@ import java.util.Set;
  * @see com.github.kaktushose.jda.commands.annotations.Command
  * @since 1.0.0
  */
-public class CommandCallable {
+public class CommandCallable implements Serializable {
+
+    private static final long serialVersionUID = 0L;
 
     private final List<String> labels;
     private final String name;
@@ -22,8 +25,9 @@ public class CommandCallable {
     private final String category;
     private final List<Parameter> parameters;
     private final Set<String> permissions;
-    private final Method method;
+    private final String methodName;
     private final Object instance;
+    private transient Method method;
 
     /**
      * Constructs a CommandCallable.
@@ -36,6 +40,7 @@ public class CommandCallable {
      * @param parameters  a list of {@link Parameter}s the command needs
      * @param permissions a set of all permissions the command requires
      * @param method      the command method
+     * @param methodName  the name of the command method
      * @param instance    an instance of the class where the command method is declared
      */
     public CommandCallable(@Nonnull List<String> labels,
@@ -46,6 +51,7 @@ public class CommandCallable {
                            @Nonnull List<Parameter> parameters,
                            @Nonnull Set<String> permissions,
                            @Nonnull Method method,
+                           @Nonnull String methodName,
                            @Nonnull Object instance) {
         this.labels = labels;
         this.name = name;
@@ -55,6 +61,7 @@ public class CommandCallable {
         this.parameters = parameters;
         this.permissions = permissions;
         this.method = method;
+        this.methodName = methodName;
         this.instance = instance;
     }
 
@@ -128,6 +135,18 @@ public class CommandCallable {
      * @return the method of the command
      */
     public Method getMethod() {
+        if (method == null) {
+            try {
+                Class<?>[] classes = new Class<?>[parameters.size() + 1];
+                classes[0] = CommandEvent.class;
+                for (int i = 1; i < classes.length; i++) {
+                    classes[i] = Class.forName(parameters.get(i - 1).getParameterType());
+                }
+                method = instance.getClass().getMethod(methodName, classes);
+            } catch (NoSuchMethodException | ClassNotFoundException e) {
+                return null;
+            }
+        }
         return method;
     }
 
@@ -142,7 +161,7 @@ public class CommandCallable {
 
     @Override
     public String toString() {
-        return method.getName() + "{" +
+        return getMethod().getName() + "{" +
                 "labels=" + labels +
                 ", parameters=" + parameters.toString() +
                 ", name='" + name + '\'' +

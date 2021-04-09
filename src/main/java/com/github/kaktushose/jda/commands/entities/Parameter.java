@@ -1,6 +1,7 @@
 package com.github.kaktushose.jda.commands.entities;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 
 /**
  * This class represents a parameter defined in the signature of a command method.
@@ -12,7 +13,9 @@ import javax.annotation.Nonnull;
  * @see com.github.kaktushose.jda.commands.annotations.Concat
  * @since 1.0.0
  */
-public class Parameter {
+public class Parameter implements Serializable {
+
+    private static final long serialVersionUID = 0L;
 
     private final boolean isConcat;
     private final boolean isOptional;

@@ -4,6 +4,7 @@ import com.github.kaktushose.jda.commands.annotations.Command;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,13 +16,15 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class CommandList extends ArrayList<CommandCallable> {
+public class CommandList extends ArrayList<CommandCallable> implements Serializable {
+
+    private static final long serialVersionUID = 0L;
 
     /**
      * Constructs an empty list.
      */
     public CommandList() {
-
+        super();
     }
 
     /**
@@ -30,7 +33,7 @@ public class CommandList extends ArrayList<CommandCallable> {
      * @param collection the collection whose elements are to be placed into this list
      */
     public CommandList(@Nonnull Collection<CommandCallable> collection) {
-        addAll(collection);
+        super(collection);
     }
 
     /**
@@ -89,4 +92,18 @@ public class CommandList extends ArrayList<CommandCallable> {
         return sortedByCategories;
     }
 
+    public void readFromFile(String path) throws IOException, ClassNotFoundException {
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream((path)));
+        CommandList list = (CommandList) ois.readObject();
+        System.out.println(list);
+        addAll(list);
+        ois.close();
+    }
+
+    public void writeToFile(String path) throws IOException {
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream((path)));
+        oos.writeObject(this);
+        oos.flush();
+        oos.close();
+    }
 }
